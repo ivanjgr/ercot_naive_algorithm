@@ -39,19 +39,26 @@ class Strategy:
 
     def get_offer_price(self, operation_date: pd.Timestamp):
         # For now the bid price will be the RTM price avg - self.min_margin from two days before the same hour
-        # RTM price avg from from 1 week
+        # RTM price avg from 1 week
         two_days_ago_date = operation_date - pd.Timedelta(days=2)
         one_week_ago_date = operation_date - pd.Timedelta(days=7)
-        bid_price = self.node_data.loc[one_week_ago_date:two_days_ago_date, "SPP_RT"].mean() - self.min_margen
+        df_for_bid = self.node_data.loc[one_week_ago_date:two_days_ago_date]
+        # Only the same hour
+        bid_price = df_for_bid[df_for_bid["hour_ending"] == (operation_date.hour + 1)]["SPP_RT"].mean() - self.min_margen
+
+        if bid_price is np.nan:
+            # Mean price in that hour
+            bid_price = self.node_data[self.node_data["hour_ending"] == (operation_date.hour + 1)]["SPP_RT"].mean()
 
         return bid_price
 
     def apply_rules(self, operation_date: pd.Timestamp):
         # If none of the rules apply, return -inf
-        if not all([rule.is_applicable(operation_date) for rule in self.rules]):
+        if not any([rule.is_applicable(operation_date) for rule in self.rules]):
             return -np.inf
 
-        return self.get_offer_price(operation_date)
+        #return self.get_offer_price(operation_date)
+        return np.inf
 
 
 class TimeBasedRule:

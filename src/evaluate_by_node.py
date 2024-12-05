@@ -9,18 +9,195 @@ def evaluate_performance(df_node: pd.DataFrame, strategy: Strategy) -> pd.DataFr
     df_node_local["awarded"] = (df_node_local["bid_price"] >= df_node_local["SPP_DA"]).astype(int)
     df_node_local["profit"] = (df_node_local["SPP_RT"] - df_node_local["SPP_DA"]) * df_node_local["awarded"]
     df_node_local["rules"] = ' & '.join([str(rule) for rule in strategy.rules])
+    df_node_local["bid_price"] = df_node_local.apply(lambda x: x["SPP_DA"] + 1 if x["awarded"] == 1 else x["SPP_DA"] - 1, axis=1)
+    r = Results(df_node_local)
+    print(r)
+    r.save_results()
+    r.generate_plot()
 
-    return df_node_local
-
-
-if __name__ == "__main__":
+def evaluate_nebula():
     # Load the virtual trading data
-    node_data = get_node_data("BONETSLR_RN")
+    node_data = get_node_data("NEBULA_RN")
     # Define the strategy
-    rules = [TimeBasedRule(day_of_week='Tuesday', hour_range=list(range(0, 12)))]
-    strategy = Strategy("BONETSLR_RN", rules)
+    rules = [
+        TimeBasedRule(day_of_week='Tuesday', hour_range=list(range(4, 10)) + list(range(19, 24))),
+        TimeBasedRule(day_of_week='Wednesday', hour_range=list(range(5, 9))),
+    ]
+    strategy = Strategy("NEBULA_RN", rules)
+    # Evaluate the strategy
+    results = evaluate_performance(node_data, strategy)
+
+    # To save replace -inf with -999
+    #results = results.replace(-float('inf'), -999)
+    #results = results.replace(float('inf'), 999)
+    # Where awarded = 1, bid_price = SPP_DA + 1, otherwise bid_price = SPP_DA - 1
+    results["bid_price"] = results.apply(lambda x: x["SPP_DA"] + 1 if x["awarded"] == 1 else x["SPP_DA"] - 1, axis=1)
+    results.to_csv("../results/nodo_NEBULA_RN.csv")
+
+
+def evaluate_massengl():
+    # Load the virtual trading data
+    node_data = get_node_data("MASSENGL_G8")
+    # Define the strategy
+    rules = [
+        TimeBasedRule(day_of_week='Monday', hour_range=[7, 20, 21, 22, 23]),
+        TimeBasedRule(day_of_week='Tuesday', hour_range=[0, 1, 2, 3, 4, 5, 6, 21]),
+        TimeBasedRule(day_of_week='Wednesday', hour_range=[7, 22, 23] ),
+        TimeBasedRule(day_of_week='Thursday', hour_range=[0, 1, 2, 3, 4, 5, 6, 7, 8] ),
+        TimeBasedRule(day_of_week='Friday', hour_range=[1, 2, 3, 20, 21, 22, 23] ),
+        TimeBasedRule(day_of_week='Saturday', hour_range=[1, 2, 3, 4, 5, 6, 19] ),
+        TimeBasedRule(day_of_week='Sunday', hour_range=[1, 2, 3, 4, 5, 6, 7, 22, 23] ),
+    ]
+    strategy = Strategy("MASSENGL_G8", rules)
+    # Evaluate the strategy
+    evaluate_performance(node_data, strategy)
+
+
+def evaluate_aeec():
+    # Load the virtual trading data
+    node_data = get_node_data("AEEC")
+    # Define the strategy
+    rules = [
+        TimeBasedRule(day_of_week='Monday', hour_range=[20, 21, 22, 23]),
+        TimeBasedRule(day_of_week='Tuesday', hour_range=[20]),
+        TimeBasedRule(day_of_week='Wednesday', hour_range=[23]),
+        TimeBasedRule(day_of_week='Thursday', hour_range=[1, 2, 5, 6, 21, 23]),
+        TimeBasedRule(day_of_week='Friday', hour_range=[1, 2, 21, 22, 23]),
+        TimeBasedRule(day_of_week='Saturday', hour_range=[6]),
+        TimeBasedRule(day_of_week='Sunday', hour_range=[1, 4]),
+    ]
+    strategy = Strategy("AEEC", rules)
     # Evaluate the strategy
     results = evaluate_performance(node_data, strategy)
     # To save replace -inf with -999
-    results = results.replace(-float('inf'), -999)
-    results.to_csv("../results/nodo_BONETSLR_RN.csv")
+    #results = results.replace(-float('inf'), -999)
+    #results = results.replace(float('inf'), 999)
+    # Where awarded = 1, bid_price = SPP_DA + 1, otherwise bid_price = SPP_DA - 1
+    results["bid_price"] = results.apply(lambda x: x["SPP_DA"] + 1 if x["awarded"] == 1 else x["SPP_DA"] - 1, axis=1)
+
+
+def evaluate_pale_ess():
+    # Load the virtual trading data
+    node_data = get_node_data("PALE_ESS_EN")
+    # Define the strategy
+    rules = [
+        TimeBasedRule(day_of_week='Monday', hour_range=[20, 21, 22, 23]),
+        TimeBasedRule(day_of_week='Tuesday', hour_range=[20]),
+        TimeBasedRule(day_of_week='Wednesday', hour_range=[23]),
+        TimeBasedRule(day_of_week='Thursday', hour_range=[1, 2, 5, 6, 21, 23]),
+        TimeBasedRule(day_of_week='Friday', hour_range=[1, 2, 21, 22, 23]),
+        TimeBasedRule(day_of_week='Sunday', hour_range=[1]),
+    ]
+    strategy = Strategy("PALE_ESS_EN", rules)
+    # Evaluate the strategy
+    evaluate_performance(node_data, strategy)
+
+
+def evaluate_astra_rn():
+    # Load the virtual trading data
+    node_data = get_node_data("ASTRA_RN")
+    # Define the strategy
+    rules = [
+        TimeBasedRule(day_of_week='Monday', hour_range=[21, 22, 23]),
+        TimeBasedRule(day_of_week='Tuesday', hour_range=[0, 1, 2, 3, 4, 5, 6, 21]),
+        TimeBasedRule(day_of_week='Wednesday', hour_range=[3, 23]),
+        TimeBasedRule(day_of_week='Thursday', hour_range=[1, 2, 3, 4, 5, 6, 7, 23]),
+        TimeBasedRule(day_of_week='Friday', hour_range=[1, 2, 3, 21, 22, 23]),
+        TimeBasedRule(day_of_week='Saturday', hour_range=[1, 6, 7]),
+        TimeBasedRule(day_of_week='Sunday', hour_range=[0, 1, 2, 3, 4, 5, 6, 7]),
+    ]
+    strategy = Strategy("ASTRA_RN", rules)
+    # Evaluate the strategy
+    evaluate_performance(node_data, strategy)
+
+
+def evaluate_hrfwind_all():
+    # Load the virtual trading data
+    node_data = get_node_data("HRFDWIND_ALL")
+    # Define the strategy
+    rules = [
+        TimeBasedRule(day_of_week='Monday', hour_range=[21, 22, 23]),
+        TimeBasedRule(day_of_week='Tuesday', hour_range=[0, 1, 2, 3, 4, 5, 6, 21]),
+        TimeBasedRule(day_of_week='Wednesday', hour_range=[3, 23]),
+        TimeBasedRule(day_of_week='Thursday', hour_range=[1, 2, 3, 4, 5, 6, 7, 23]),
+        TimeBasedRule(day_of_week='Friday', hour_range=[1, 2, 3, 21, 22, 23]),
+        TimeBasedRule(day_of_week='Saturday', hour_range=[1, 6, 7]),
+        TimeBasedRule(day_of_week='Sunday', hour_range=[0, 1, 2, 3, 4, 5, 6, 7])
+    ]
+    strategy = Strategy("HRFDWIND_ALL", rules)
+    # Evaluate the strategy
+    evaluate_performance(node_data, strategy)
+
+
+def evaluate_mariah_all():
+    # Load the virtual trading data
+    node_data = get_node_data("MARIAH_ALL")
+    # Define the strategy
+    rules = [
+        TimeBasedRule(day_of_week='Monday', hour_range=[21, 22, 23]),
+        TimeBasedRule(day_of_week='Tuesday', hour_range=[0, 1, 2, 3, 4, 5, 6, 21]),
+        TimeBasedRule(day_of_week='Wednesday', hour_range=[3, 23]),
+        TimeBasedRule(day_of_week='Thursday', hour_range=[1, 2, 3, 4, 5, 6, 7, 23]),
+        TimeBasedRule(day_of_week='Friday', hour_range=[1, 2, 3, 21, 22, 23]),
+        TimeBasedRule(day_of_week='Saturday', hour_range=[1, 6, 7]),
+        TimeBasedRule(day_of_week='Sunday', hour_range=[0, 1, 2, 3, 4, 5, 6, 7])
+    ]
+    strategy = Strategy("MARIAH_ALL", rules)
+    # Evaluate the strategy
+    evaluate_performance(node_data, strategy)
+
+
+def evaluate_sspurtwind_all():
+    # Load the virtual trading data
+    node_data = get_node_data("SSPURT_WIND1")
+    # Define the strategy
+    rules = [
+        TimeBasedRule(day_of_week='Monday', hour_range=[21, 22, 23]),
+        TimeBasedRule(day_of_week='Tuesday', hour_range=[1, 2, 3, 4, 5, 6]),
+        TimeBasedRule(day_of_week='Wednesday', hour_range=[3, 23]),
+        TimeBasedRule(day_of_week='Thursday', hour_range=[1, 2, 3, 4, 6, 7, 23]),
+        TimeBasedRule(day_of_week='Friday', hour_range=[1, 2, 3, 21, 22, 23]),
+        TimeBasedRule(day_of_week='Saturday', hour_range=[6, 7]),
+        TimeBasedRule(day_of_week='Sunday', hour_range=[0, 1, 2, 3, 4, 5, 6, 7])
+    ]
+    strategy = Strategy("SSPURT_WIND1", rules)
+    # Evaluate the strategy
+    evaluate_performance(node_data, strategy)
+
+
+def evaluate_fryeslr_all():
+    # Load the virtual trading data
+    node_data = get_node_data("FRYE_SLR_ALL")
+    # Define the strategy
+    rules = [
+        TimeBasedRule(day_of_week='Monday', hour_range=[21, 22, 23]),
+        TimeBasedRule(day_of_week='Tuesday', hour_range=[1, 2, 3, 4, 5, 6]),
+        TimeBasedRule(day_of_week='Wednesday', hour_range=[23]),
+        TimeBasedRule(day_of_week='Thursday', hour_range=[1, 2, 3, 4, 6, 7]),
+        TimeBasedRule(day_of_week='Friday', hour_range=[1, 2, 3, 21, 22, 23]),
+        TimeBasedRule(day_of_week='Saturday', hour_range=[6, 7]),
+        TimeBasedRule(day_of_week='Sunday', hour_range=[0, 1, 2, 3, 4, 5, 6, 7])
+    ]
+    strategy = Strategy("FRYE_SLR_ALL", rules)
+    # Evaluate the strategy
+    evaluate_performance(node_data, strategy)
+
+
+def evaluate_dce():
+    # Load the virtual trading data
+    node_data = get_node_data("DC_E")
+    # Define the strategy
+    rules = [
+        TimeBasedRule(day_of_week='Monday', hour_range=[6, 14]),
+        TimeBasedRule(day_of_week='Tuesday', hour_range=[1, 2, 3, 4, 5]),
+        TimeBasedRule(day_of_week='Thursday', hour_range=[6]),
+        TimeBasedRule(day_of_week='Saturday', hour_range=[1, 2]),
+        TimeBasedRule(day_of_week='Sunday', hour_range=[1, 3, 4, 23])
+    ]
+    strategy = Strategy("DC_E", rules)
+    # Evaluate the strategy
+    evaluate_performance(node_data, strategy)
+
+
+if __name__ == "__main__":
+    evaluate_dce()
