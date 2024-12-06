@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 from os.path import join
 
 
-
-
 class Results:
     __FILE_PATH__ = os.path.dirname(__file__)
 
@@ -31,17 +29,31 @@ class Results:
         ax['profit'].set_ylabel('USD')
         ax['profit'].get_yaxis().set_major_formatter(plt.FuncFormatter(lambda x, loc: "{:,}".format(int(x))))
 
-        ax['mw'].plot(self.df.index, self.df['bid_price'], color='blue')
-        # Configure axis between the 10th and 90th percentile
-        ax['mw'].set_ylim(self.df['bid_price'].quantile(0.02), self.df['bid_price'].quantile(0.98))
-        # Grid
-        ax['mw'].grid(linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
-        # log axis
-        self.df.plot(y='SPP_DA', ax=ax['SPP'])
-        self.df.plot(y='SPP_RT', ax=ax['SPP'])
+        # Histograma de la suma de los retornos, incluyendo los negativos
+        skew = self.df[['return_DA_RT']].resample('D').sum().skew().values[0]
+        df_no_outliers = self.df[["return_DA_RT"]].resample('D').sum()
+        df_no_outliers = df_no_outliers[np.abs(df_no_outliers['return_DA_RT'] - df_no_outliers['return_DA_RT'].mean()) <= (3 * df_no_outliers['return_DA_RT'].std())]
+        df_no_outliers.hist(
+            ax=ax['mw'],
+            color='blue',
+            alpha=0.5,
+            edgecolor='black', linewidth=0.5,
+            label='Return DA-RT',
+            bins=40
+        )
+        # No title for ax['mw']
+        ax['mw'].set_title('Daily return DA-RT, excluding outliers')
+        # Add skew as text in the plot
+        ax['mw'].text(0.95, 0.95, f"Skew: {skew:.2f}", transform=ax['mw'].transAxes, fontsize=10,
+                      verticalalignment='top', horizontalalignment='right')
+        # Thousand separator for x axis
+        ax['mw'].get_xaxis().set_major_formatter(plt.FuncFormatter(lambda x, loc: "{:,}".format(int(x))))
+
+        # Daily mean SPP
+        self.df[["SPP_DA"]].resample('D').mean().plot(y='SPP_DA', ax=ax['SPP'], linewidth=0.5, color='green')
+        self.df[["SPP_RT"]].resample('D').mean().plot(y='SPP_RT', ax=ax['SPP'], linewidth=0.5, color='red')
         ax['SPP'].grid(linestyle='--', linewidth=0.5, color='gray', alpha=0.5)
         ax['SPP'].set_ylabel('USD')
-        ax['SPP'].set_ylim(self.df['SPP_DA'].quantile(0.02), self.df['SPP_DA'].quantile(0.98))
 
         plt.suptitle(f"{self.spp_name}")
         plt.savefig(join(parent_folder, 'results', 'img', f'{self.spp_name}_results.png'), dpi=300, bbox_inches='tight')

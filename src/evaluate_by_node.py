@@ -1,4 +1,6 @@
 import pandas as pd
+from os.path import join
+from tqdm import tqdm
 from strategy import Strategy, get_node_data, TimeBasedRule
 from results import Results
 
@@ -199,5 +201,62 @@ def evaluate_dce():
     evaluate_performance(node_data, strategy)
 
 
+def evaluate_dcl():
+    # Load the virtual trading data
+    node_data = get_node_data("DC_L")
+    # Define the strategy
+    rules = [
+        TimeBasedRule(day_of_week='Tuesday', hour_range=[23]),
+        TimeBasedRule(day_of_week='Wednesday', hour_range=[4, 5]),
+        TimeBasedRule(day_of_week='Thursday', hour_range=[22, 23]),
+        TimeBasedRule(day_of_week='Friday', hour_range=[1, 2, 23]),
+        TimeBasedRule(day_of_week='Saturday', hour_range=[20, 21, 22, 23]),
+        TimeBasedRule(day_of_week='Sunday', hour_range=[18]),
+    ]
+    strategy = Strategy("DC_L", rules)
+    # Evaluate the strategy
+    evaluate_performance(node_data, strategy)
+
+
+def evaluate_lz_north():
+    # Load the virtual trading data
+    node_data = get_node_data("LZ_NORTH")
+    # Define the strategy
+    rules = [
+        TimeBasedRule(day_of_week='Monday', hour_range=[6, 14]),
+        TimeBasedRule(day_of_week='Tuesday', hour_range=[1, 2, 3, 4]),
+        TimeBasedRule(day_of_week='Thursday', hour_range=[6]),
+        TimeBasedRule(day_of_week='Saturday', hour_range=[1, 2, 3, 23]),
+        TimeBasedRule(day_of_week='Sunday', hour_range=[3, 4, 23]),
+    ]
+    strategy = Strategy("LZ_NORTH", rules)
+    # Evaluate the strategy
+    evaluate_performance(node_data, strategy)
+
+
+def evaluate_all_nodes():
+    data_base_path = '../data/'
+    complete_df_sorted = pd.read_csv(join(data_base_path, 'virtual_trading_weekday_hour.csv'))
+    node_list = complete_df_sorted['settlementPoint_'].unique()
+
+    cond = lambda x: x > 1
+    for node in tqdm(node_list):
+        test_node_data = complete_df_sorted[complete_df_sorted['settlementPoint_'] == node].copy()
+
+        df_node_weekly = test_node_data.sort_values(by=["day_of_week_", "hour_"])
+        rules = []
+        for dow in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]:
+            h_list = []
+            for hour in range(24):
+                df_local = df_node_weekly[(df_node_weekly["day_of_week_"] == dow) & (df_node_weekly["hour_"] == hour)]
+                if cond(df_local["return_DA_RT_median"].values[0]):
+                    h_list.append(hour)
+
+            if len(h_list) > 0:
+                rules.append(TimeBasedRule(day_of_week=dow, hour_range=h_list))
+
+        strategy = Strategy(node, rules)
+        evaluate_performance(get_node_data(node), strategy)
+
 if __name__ == "__main__":
-    evaluate_dce()
+    evaluate_all_nodes()
